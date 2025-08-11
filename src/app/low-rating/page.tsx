@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function LowRatingPage() {
+function LowRatingForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState(0);
@@ -238,5 +238,20 @@ export default function LowRatingPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LowRatingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100 dark:from-orange-900 dark:via-amber-900 dark:to-yellow-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-orange-700 dark:text-orange-300">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LowRatingForm />
+    </Suspense>
   );
 }

@@ -1,13 +1,16 @@
-# File-Based Storage for Development
+# Hybrid Storage System
 
-This application uses a file-based storage system for development instead of MongoDB Atlas. All feedback data is stored in a JSON file.
+This application uses a hybrid storage approach:
+- **Development**: File-based storage (JSON file)
+- **Production**: MongoDB Atlas (cloud database)
 
 ## How It Works
 
-### Storage Location
-- **File Path**: `data/feedback.json` (in project root)
-- **Format**: JSON array of feedback objects
-- **Auto-created**: The file and directory are created automatically when the first feedback is submitted
+### Storage Locations
+- **Development**: `data/feedback.json` (in project root)
+- **Production**: MongoDB Atlas database `trustpilot`, collection `feedbacks`
+- **Format**: JSON array of feedback objects (dev) / MongoDB documents (prod)
+- **Auto-created**: Files and collections are created automatically when the first feedback is submitted
 
 ### Data Structure
 ```json
@@ -98,23 +101,20 @@ The system automatically:
 - File is automatically backed up (it's just a JSON file)
 - Can be manually edited if needed
 
-## Migration to MongoDB
+## Production Deployment
 
-When you're ready to use MongoDB Atlas in production:
+This application automatically switches to MongoDB Atlas in production mode. The feedback data will be stored in the `trustpilot` database, `feedbacks` collection.
 
-1. **Update Environment Variables**:
-   ```env
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/trust-feedback?retryWrites=true&w=majority
-   MONGODB_DB_NAME=trust-feedback
-   ```
+### Environment Variables Required:
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+```
 
-2. **Switch Service Implementation**:
-   - Replace `src/lib/feedbackService.ts` with MongoDB version
-   - Update `src/lib/mongodb.ts` to use actual MongoDB connection
-
-3. **Data Migration** (Optional):
-   - Export data from `data/feedback.json`
-   - Import into MongoDB Atlas using MongoDB Compass or scripts
+### Deployment Considerations:
+1. **MongoDB Atlas**: Ensure your cluster is running and accessible
+2. **Connection String**: Set the MONGODB_URI environment variable in your deployment platform
+3. **Database Permissions**: Ensure your MongoDB user has read/write access to the trustpilot database
+4. **Network Access**: Configure IP whitelist in MongoDB Atlas if needed
 
 ## Advantages of File-Based Storage
 
@@ -140,10 +140,10 @@ When you're ready to use MongoDB Atlas in production:
 
 ## Limitations
 
-### ❌ **Not Production Ready**
-- No concurrent access handling
-- No data validation beyond basic checks
-- No backup/restore mechanisms
+### ⚠️ **Production Considerations**
+- Limited concurrent access handling
+- Basic data validation
+- Manual backup/restore mechanisms required
 
 ### ❌ **Scalability Issues**
 - File size grows with data
@@ -181,9 +181,14 @@ When you're ready to use MongoDB Atlas in production:
 
 ## Next Steps
 
-When you're ready for production:
-1. Set up MongoDB Atlas (see `MONGODB_SETUP.md`)
-2. Update environment variables
-3. Switch to MongoDB service implementation
-4. Test data migration
-5. Deploy with MongoDB configuration
+For production deployment:
+1. Set up MongoDB Atlas cluster (already configured)
+2. Add MONGODB_URI environment variable to your deployment platform
+3. Deploy your application - it will automatically use MongoDB in production
+4. Test the feedback submission and retrieval functionality
+5. Monitor MongoDB Atlas dashboard for data and performance
+
+### Environment Variable Setup:
+- **Vercel**: Add MONGODB_URI in Project Settings > Environment Variables
+- **Netlify**: Add MONGODB_URI in Site Settings > Environment Variables
+- **Railway**: Add MONGODB_URI in Variables section

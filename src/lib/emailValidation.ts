@@ -31,8 +31,7 @@ export class EmailValidationService {
 
     try {
       const response = await fetch(
-        `https://emailvalidation.abstractapi.com/v1/?api_key=${this.apiKey}&email=${encodeURIComponent(email)}`,
-        { timeout: 10000 } // 10 second timeout
+        `https://emailvalidation.abstractapi.com/v1/?api_key=${this.apiKey}&email=${encodeURIComponent(email)}`
       );
 
       if (!response.ok) {
@@ -121,8 +120,7 @@ export class EmailValidationService {
 
     try {
       const response = await fetch(
-        `http://apilayer.net/api/check?access_key=${apiKey}&email=${encodeURIComponent(email)}&smtp=1&format=1`,
-        { timeout: 10000 }
+        `http://apilayer.net/api/check?access_key=${apiKey}&email=${encodeURIComponent(email)}&smtp=1&format=1`
       );
 
       if (!response.ok) {

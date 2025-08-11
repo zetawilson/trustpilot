@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function HighRatingPage() {
+function HighRatingForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState(0);
@@ -217,5 +217,20 @@ export default function HighRatingPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function HighRatingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-green-900 dark:via-emerald-900 dark:to-teal-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-green-700 dark:text-green-300">Loading...</p>
+        </div>
+      </div>
+    }>
+      <HighRatingForm />
+    </Suspense>
   );
 }

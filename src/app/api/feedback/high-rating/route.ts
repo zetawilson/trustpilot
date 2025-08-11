@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
                      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Save feedback to MongoDB
+    // Save feedback to file storage
     const savedFeedback = await FeedbackService.createFeedback({
       email,
       rating,
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       userAgent
     });
 
-    console.log('High-rating feedback saved to MongoDB:', {
+    console.log(`High-rating feedback saved to ${process.env.NODE_ENV === 'production' ? 'MongoDB Atlas' : 'file storage'}:`, {
       id: savedFeedback._id,
       email,
       rating,

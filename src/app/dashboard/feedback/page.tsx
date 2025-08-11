@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 interface Feedback {
   _id: string;
@@ -34,7 +34,6 @@ interface FeedbackStats {
 }
 
 export default function FeedbackDashboardPage() {
-  const { user, isLoading } = useAuth();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +97,7 @@ export default function FeedbackDashboardPage() {
     ));
   };
 
-  if (isLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -107,10 +106,6 @@ export default function FeedbackDashboardPage() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
@@ -123,17 +118,46 @@ export default function FeedbackDashboardPage() {
               <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
                 <span className="text-white font-bold text-lg">T</span>
               </div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Feedback Dashboard</h1>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Trust Feedback System</h1>
             </div>
-            <Button variant="outline" onClick={() => window.history.back()}>
-              Back to Dashboard
-            </Button>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm">
+                  📊 Dashboard
+                </Button>
+              </Link>
+              <Link href="/feedback-demo">
+                <Button variant="outline" size="sm">
+                  💬 Demo
+                </Button>
+              </Link>
+              <Link href="/high-rating">
+                <Button variant="outline" size="sm">
+                  ⭐ High Ratings
+                </Button>
+              </Link>
+              <Link href="/low-rating">
+                <Button variant="outline" size="sm">
+                  📉 Low Ratings
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+            Welcome to Trust Feedback System! 👋
+          </h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Manage and analyze all your feedback in one place. View statistics, filter feedback, and respond to user comments.
+          </p>
+        </div>
+
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
