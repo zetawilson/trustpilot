@@ -47,6 +47,9 @@ if (process.env.NODE_ENV === 'development') {
     },
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 5000,
+    tls: false,
+    tlsAllowInvalidCertificates: false,
+    tlsAllowInvalidHostnames: false,
   });
   clientPromise = client.connect()
     .then(() => {
