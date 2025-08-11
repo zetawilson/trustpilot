@@ -2,26 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Will redirect to login via auth context
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Header */}
@@ -36,11 +19,13 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-slate-600 dark:text-slate-400 hidden sm:block">
-                Welcome, {user.name}
+                Welcome to Trust
               </span>
-              <Button variant="outline" onClick={logout}>
-                Logout
-              </Button>
+              <Link href="/">
+                <Button variant="outline">
+                  Back to Home
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -51,10 +36,10 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-            Welcome back, {user.name}! 👋
+            Welcome to Trust Dashboard! 👋
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Here's what's happening with your account today
+            Here's what's happening with your feedback system today
           </p>
         </div>
 
@@ -63,13 +48,41 @@ export default function DashboardPage() {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Total Projects
+                Total Feedback
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">156</div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                +23 from last week
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                High Ratings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">89</div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                57% of total feedback
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                Low Ratings
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">12</div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                +2 from last month
+                8% of total feedback
               </p>
             </CardContent>
           </Card>
@@ -77,41 +90,13 @@ export default function DashboardPage() {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Active Tasks
+                Response Rate
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">8</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">94%</div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                3 due this week
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Team Members
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">24</div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                +3 new this month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Revenue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">$45.2K</div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                +12% from last month
+                +5% from last month
               </p>
             </CardContent>
           </Card>
@@ -121,30 +106,28 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Projects</CardTitle>
-              <CardDescription>Your latest project updates</CardDescription>
+              <CardTitle>Recent Feedback</CardTitle>
+              <CardDescription>Latest feedback submissions</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { name: 'E-commerce Platform', status: 'In Progress', progress: 75 },
-                { name: 'Mobile App Redesign', status: 'Review', progress: 90 },
-                { name: 'API Integration', status: 'Completed', progress: 100 },
-                { name: 'Database Migration', status: 'Planning', progress: 25 }
-              ].map((project, index) => (
+                { message: 'Great experience with the new interface!', rating: 5, time: '2 hours ago' },
+                { message: 'Could use some improvements in mobile view', rating: 3, time: '4 hours ago' },
+                { message: 'Excellent customer service', rating: 5, time: '6 hours ago' },
+                { message: 'Found a bug in the checkout process', rating: 2, time: '1 day ago' }
+              ].map((feedback, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
                   <div className="flex-1">
-                    <h4 className="font-medium text-slate-900 dark:text-slate-100">{project.name}</h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{project.status}</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{feedback.message}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{feedback.time}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {project.progress}%
-                    </div>
-                    <div className="w-20 h-2 bg-slate-200 dark:bg-slate-700 rounded-full mt-1">
-                      <div 
-                        className="h-2 bg-blue-600 rounded-full transition-all duration-300"
-                        style={{ width: `${project.progress}%` }}
-                      ></div>
+                  <div className="text-right ml-4">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={`text-sm ${i < feedback.rating ? 'text-yellow-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                          ★
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -158,25 +141,33 @@ export default function DashboardPage() {
               <CardDescription>Common tasks and shortcuts</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <Link href="/feedback-demo">
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="mr-2">💬</span>
+                  Try Feedback Demo
+                </Button>
+              </Link>
+              <Link href="/dashboard/feedback">
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="mr-2">📊</span>
+                  View All Feedback
+                </Button>
+              </Link>
+              <Link href="/high-rating">
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="mr-2">⭐</span>
+                  High Ratings
+                </Button>
+              </Link>
+              <Link href="/low-rating">
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="mr-2">📉</span>
+                  Low Ratings
+                </Button>
+              </Link>
               <Button className="w-full justify-start" variant="outline">
-                <span className="mr-2">📁</span>
-                Create New Project
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <span className="mr-2">👥</span>
-                Invite Team Member
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <span className="mr-2">📊</span>
+                <span className="mr-2">📈</span>
                 View Analytics
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => window.location.href = '/dashboard/feedback'}>
-                <span className="mr-2">💬</span>
-                View Feedback
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <span className="mr-2">⚙️</span>
-                Settings
               </Button>
             </CardContent>
           </Card>

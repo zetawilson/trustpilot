@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { ObjectId } from 'mongodb';
+import { randomUUID } from 'crypto';
 
 export interface Feedback {
   _id?: string;
@@ -45,7 +45,7 @@ export class FeedbackService {
   static async createFeedback(feedbackData: Omit<Feedback, '_id' | 'timestamp'>): Promise<Feedback> {
     const feedback: Feedback = {
       ...feedbackData,
-      _id: new ObjectId().toString(),
+      _id: randomUUID(),
       timestamp: new Date(),
     };
 

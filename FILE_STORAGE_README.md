@@ -1,6 +1,6 @@
-# File-Based Storage for Development
+# File-Based Storage System
 
-This application uses a file-based storage system for development instead of MongoDB Atlas. All feedback data is stored in a JSON file.
+This application uses a file-based storage system for both development and production. All feedback data is stored in a JSON file.
 
 ## How It Works
 
@@ -98,23 +98,15 @@ The system automatically:
 - File is automatically backed up (it's just a JSON file)
 - Can be manually edited if needed
 
-## Migration to MongoDB
+## Production Deployment
 
-When you're ready to use MongoDB Atlas in production:
+This application is configured to use file-based storage in production. The feedback data will be stored in `data/feedback.json` on your server.
 
-1. **Update Environment Variables**:
-   ```env
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/trust-feedback?retryWrites=true&w=majority
-   MONGODB_DB_NAME=trust-feedback
-   ```
-
-2. **Switch Service Implementation**:
-   - Replace `src/lib/feedbackService.ts` with MongoDB version
-   - Update `src/lib/mongodb.ts` to use actual MongoDB connection
-
-3. **Data Migration** (Optional):
-   - Export data from `data/feedback.json`
-   - Import into MongoDB Atlas using MongoDB Compass or scripts
+### Deployment Considerations:
+1. **File Permissions**: Ensure the server has write access to the `data/` directory
+2. **Backup Strategy**: Set up regular backups of `data/feedback.json`
+3. **Disk Space**: Monitor disk space as the feedback file grows
+4. **Concurrent Access**: For high-traffic sites, consider implementing file locking
 
 ## Advantages of File-Based Storage
 
@@ -140,10 +132,10 @@ When you're ready to use MongoDB Atlas in production:
 
 ## Limitations
 
-### ❌ **Not Production Ready**
-- No concurrent access handling
-- No data validation beyond basic checks
-- No backup/restore mechanisms
+### ⚠️ **Production Considerations**
+- Limited concurrent access handling
+- Basic data validation
+- Manual backup/restore mechanisms required
 
 ### ❌ **Scalability Issues**
 - File size grows with data
@@ -181,9 +173,9 @@ When you're ready to use MongoDB Atlas in production:
 
 ## Next Steps
 
-When you're ready for production:
-1. Set up MongoDB Atlas (see `MONGODB_SETUP.md`)
-2. Update environment variables
-3. Switch to MongoDB service implementation
-4. Test data migration
-5. Deploy with MongoDB configuration
+For production deployment:
+1. Ensure server has write permissions to the `data/` directory
+2. Set up automated backups of `data/feedback.json`
+3. Monitor disk space and file size
+4. Consider implementing file locking for high-traffic scenarios
+5. Deploy with file storage configuration
