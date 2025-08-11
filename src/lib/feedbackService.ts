@@ -198,7 +198,7 @@ export class FeedbackService {
       try {
         return await this.createFeedbackMongoDB(feedbackData);
       } catch (error) {
-        console.error('MongoDB connection failed, falling back to file storage:', error.message);
+        console.error('MongoDB connection failed, falling back to file storage:', error instanceof Error ? error.message : String(error));
         // Fallback to file storage if MongoDB fails
         const feedback: Feedback = {
           ...feedbackData,
@@ -235,7 +235,7 @@ export class FeedbackService {
       try {
         return await this.getAllFeedbackMongoDB();
       } catch (error) {
-        console.error('MongoDB connection failed, falling back to file storage:', error.message);
+        console.error('MongoDB connection failed, falling back to file storage:', error instanceof Error ? error.message : String(error));
         const feedback = await this.readFeedbackFile();
         return feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       }
