@@ -191,10 +191,29 @@ export class FeedbackService {
 
   // Public methods with automatic storage switching
   static async createFeedback(feedbackData: Omit<Feedback, '_id' | 'timestamp'>): Promise<Feedback> {
-    if (process.env.NODE_ENV === 'production') {
-      return this.createFeedbackMongoDB(feedbackData);
+    // Force file storage in development to avoid Windows SSL issues
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.createFeedbackMongoDB(feedbackData);
+      } catch (error) {
+        console.error('MongoDB connection failed, falling back to file storage:', error.message);
+        // Fallback to file storage if MongoDB fails
+        const feedback: Feedback = {
+          ...feedbackData,
+          _id: randomUUID(),
+          timestamp: new Date(),
+        };
+
+        const allFeedback = await this.readFeedbackFile();
+        allFeedback.push(feedback);
+        await this.writeFeedbackFile(allFeedback);
+
+        return feedback;
+      }
     } else {
-      // Development mode - use file storage
+      // Development mode or forced file storage - use file storage
       const feedback: Feedback = {
         ...feedbackData,
         _id: randomUUID(),
@@ -210,8 +229,16 @@ export class FeedbackService {
   }
 
   static async getAllFeedback(): Promise<Feedback[]> {
-    if (process.env.NODE_ENV === 'production') {
-      return this.getAllFeedbackMongoDB();
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.getAllFeedbackMongoDB();
+      } catch (error) {
+        console.error('MongoDB connection failed, falling back to file storage:', error.message);
+        const feedback = await this.readFeedbackFile();
+        return feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      }
     } else {
       const feedback = await this.readFeedbackFile();
       return feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

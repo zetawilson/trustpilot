@@ -1,13 +1,12 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient  ,ServerApiVersion} from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
 
-let client;
+let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
@@ -18,14 +17,46 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
+    const client = new MongoClient(uri, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
+    globalWithMongo._mongoClientPromise = client.connect()
+      .then(() => {
+        console.log('✅ MongoDB connected successfully (development)');
+        return client;
+      })
+      .catch((error) => {
+        console.error('❌ MongoDB connection failed (development):', error.message);
+        throw error;
+      });
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
   // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+  });
+  clientPromise = client.connect()
+    .then(() => {
+      console.log('✅ MongoDB connected successfully (production)');
+      return client;
+    })
+    .catch((error) => {
+      console.error('❌ MongoDB connection failed (production):', error.message);
+      throw error;
+    });
 }
 
 // Export a module-scoped MongoClient promise. By doing this in a
