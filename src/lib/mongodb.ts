@@ -17,15 +17,7 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    const client = new MongoClient(uri, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-    });
+    const client = new MongoClient(uri);
     globalWithMongo._mongoClientPromise = client.connect()
       .then(() => {
         console.log('✅ MongoDB connected successfully (development)');
@@ -39,18 +31,7 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
   // In production mode, it's best to not use a global variable.
-  const client = new MongoClient(uri, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    },
-    serverSelectionTimeoutMS: 5000,
-    connectTimeoutMS: 5000,
-    tls: false,
-    tlsAllowInvalidCertificates: false,
-    tlsAllowInvalidHostnames: false,
-  });
+  const client = new MongoClient(uri);
   clientPromise = client.connect()
     .then(() => {
       console.log('✅ MongoDB connected successfully (production)');
