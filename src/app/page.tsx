@@ -2,14 +2,27 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Redirect to feedback dashboard as the entry page
-    router.push('/dashboard/feedback');
-  }, [router]);
+    if (!isLoading) {
+      if (user) {
+        // User is logged in, redirect to dashboard
+        if (user.isSuperUser) {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard/feedback');
+        }
+      } else {
+        // User is not logged in, redirect to login
+        router.push('/login');
+      }
+    }
+  }, [user, isLoading, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">

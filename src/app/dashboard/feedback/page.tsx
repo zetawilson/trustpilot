@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface Feedback {
   _id: string;
@@ -34,15 +36,24 @@ interface FeedbackStats {
 }
 
 export default function FeedbackDashboardPage() {
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'high-rating' | 'low-rating'>('all');
 
   useEffect(() => {
-    fetchFeedback();
-    fetchStats();
-  }, [filter]);
+    if (!isLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (!isLoading && user) {
+      fetchFeedback();
+      fetchStats();
+    }
+  }, [user, isLoading, router, filter]);
 
   const fetchFeedback = async () => {
     try {
@@ -121,6 +132,9 @@ export default function FeedbackDashboardPage() {
               <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Trust Feedback System</h1>
             </div>
             <div className="flex items-center gap-3">
+              <span className="text-slate-600 dark:text-slate-400 hidden sm:block">
+                Welcome, {user?.name || user?.email}
+              </span>
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   📊 Dashboard
@@ -141,6 +155,19 @@ export default function FeedbackDashboardPage() {
                   📉 Low Ratings
                 </Button>
               </Link>
+              {user?.isSuperUser && (
+                <Link href="/admin">
+                  <Button variant="outline" size="sm">
+                    👨‍💼 Admin
+                  </Button>
+                </Link>
+              )}
+              <Button variant="outline" onClick={async () => {
+                await logout();
+                router.push('/login');
+              }}>
+                Logout
+              </Button>
             </div>
           </div>
         </div>

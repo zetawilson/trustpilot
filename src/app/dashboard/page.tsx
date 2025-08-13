@@ -3,8 +3,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  if (!isLoading && !user) {
+    router.push('/login');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Header */}
@@ -19,13 +30,26 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-slate-600 dark:text-slate-400 hidden sm:block">
-                Welcome to Trust
+                Welcome, {user?.name || user?.email}
               </span>
-              <Link href="/">
-                <Button variant="outline">
-                  Back to Home
+              <Link href="/dashboard/feedback">
+                <Button variant="outline" size="sm">
+                  📊 Feedback
                 </Button>
               </Link>
+              {user?.isSuperUser && (
+                <Link href="/admin">
+                  <Button variant="outline" size="sm">
+                    👨‍💼 Admin
+                  </Button>
+                </Link>
+              )}
+              <Button variant="outline" onClick={async () => {
+                await logout();
+                router.push('/login');
+              }}>
+                Logout
+              </Button>
             </div>
           </div>
         </div>

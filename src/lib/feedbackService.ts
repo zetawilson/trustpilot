@@ -125,8 +125,13 @@ export class FeedbackService {
 
   private static async deleteFeedbackMongoDB(id: string): Promise<boolean> {
     const collection = await getFeedbacksCollection();
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
-    return result.deletedCount > 0;
+    try {
+      const result = await collection.deleteOne({ _id: new ObjectId(id) });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Invalid feedback ID format:', id);
+      return false;
+    }
   }
 
   private static async clearAllFeedbackMongoDB(): Promise<void> {
