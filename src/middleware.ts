@@ -10,11 +10,17 @@ export function middleware(request: NextRequest) {
     '/',
     '/login',
     '/signup',
+    '/high-rating',
+    '/low-rating',
+    '/feedback-demo',
     '/api/auth/login',
     '/api/auth/signup',
     '/api/auth/logout',
     '/api/auth/me',
     '/api/init',
+    '/api/feedback/high-rating',
+    '/api/feedback/low-rating',
+    '/api/feedback',
   ];
 
   // Admin routes that require super user privileges
