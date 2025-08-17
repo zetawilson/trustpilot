@@ -4,14 +4,7 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 let uri: string;
 
 // Check if using new credential-based configuration
-if (process.env.MONGODB_HOST && process.env.MONGODB_USERNAME && process.env.MONGODB_PASSWORD) {
-  // Build MongoDB URI with separate credentials
-  const username = encodeURIComponent(process.env.MONGODB_USERNAME);
-  const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
-  const host = process.env.MONGODB_HOST;
-  
-  uri = `mongodb+srv://${username}:${password}@${host}/?retryWrites=true&w=majority&appName=Cluster0`;
-} else if (process.env.MONGODB_URI) {
+if (process.env.MONGODB_URI) {
   // Fallback to legacy MONGODB_URI format
   uri = process.env.MONGODB_URI;
 } else {
