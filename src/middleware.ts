@@ -17,6 +17,7 @@ export function middleware(request: NextRequest) {
     '/api/auth/signup',
     '/api/auth/logout',
     '/api/auth/me',
+    '/api/auth/change-password',
     '/api/init',
     '/api/feedback/high-rating',
     '/api/feedback/low-rating',

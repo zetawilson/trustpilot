@@ -223,6 +223,11 @@ export default function FeedbackDashboardPage() {
                   💬 Demo
                 </Button>
               </Link>
+              <Link href="/profile">
+                <Button variant="outline" size="sm">
+                  👤 Profile
+                </Button>
+              </Link>
               <Link href="/high-rating">
                 <Button variant="outline" size="sm">
                   ⭐ High Ratings
@@ -271,11 +276,16 @@ export default function FeedbackDashboardPage() {
                   Welcome, {user?.name || user?.email}
                 </div>
 
-                <Link href="/feedback-demo" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    💬 Demo
-                  </Button>
-                </Link>
+                              <Link href="/feedback-demo" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  💬 Demo
+                </Button>
+              </Link>
+              <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  👤 Profile
+                </Button>
+              </Link>
                 <Link href="/high-rating" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">
                     ⭐ High Ratings

@@ -37,15 +37,16 @@ export class AuthService {
     return db.collection('signup_requests');
   }
 
-  // Hash password (in production, use bcrypt)
-  private static hashPassword(password: string): string {
-    // Simple hash for demo - in production use bcrypt
-    return Buffer.from(password).toString('base64');
+  // Hash password using bcrypt
+  private static async hashPassword(password: string): Promise<string> {
+    const bcrypt = await import('bcryptjs');
+    return bcrypt.hash(password, 12);
   }
 
-  // Verify password
-  private static verifyPassword(password: string, hashedPassword: string): boolean {
-    return this.hashPassword(password) === hashedPassword;
+  // Verify password using bcrypt
+  private static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+    const bcrypt = await import('bcryptjs');
+    return bcrypt.compare(password, hashedPassword);
   }
 
   // Initialize super user
@@ -69,7 +70,7 @@ export class AuthService {
     if (!existingSuperUser) {
       const superUser: Omit<User, '_id'> = {
         email: superUserEmail,
-        password: this.hashPassword(superUserPassword),
+        password: await this.hashPassword(superUserPassword),
         name: 'Super Admin',
         isSuperUser: true,
         isApproved: true,
@@ -102,7 +103,7 @@ export class AuthService {
 
     const signupRequest: Omit<SignupRequest, '_id'> = {
       email,
-      password: this.hashPassword(password),
+      password: await this.hashPassword(password),
       name,
       status: 'pending',
       createdAt: new Date(),
@@ -126,7 +127,7 @@ export class AuthService {
       throw new Error('Invalid email or password');
     }
 
-    if (!this.verifyPassword(password, user.password)) {
+    if (!(await this.verifyPassword(password, user.password))) {
       throw new Error('Invalid email or password');
     }
 
@@ -339,5 +340,39 @@ export class AuthService {
       createdAt: new Date(user.createdAt),
       updatedAt: new Date(user.updatedAt),
     })) as User[];
+  }
+
+  // Get user from auth token
+  static async getUserFromToken(token: string): Promise<User | null> {
+    try {
+      // For now, we'll use a simple approach where the token contains the user ID
+      // In a real application, you'd want to use JWT tokens
+      const user = await this.getUserById(token);
+      return user;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Update user password
+  static async updateUserPassword(userId: string, newHashedPassword: string): Promise<boolean> {
+    const usersCollection = await this.getUsersCollection();
+    
+    try {
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(userId) },
+        {
+          $set: {
+            password: newHashedPassword,
+            updatedAt: new Date(),
+          }
+        }
+      );
+      
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error updating user password:', error);
+      return false;
+    }
   }
 }

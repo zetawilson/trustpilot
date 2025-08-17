@@ -140,6 +140,12 @@ export default function AdminPage() {
                   <span className="sm:hidden">📊</span>
                 </Button>
               </Link>
+              <Link href="/profile">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">👤 Profile</span>
+                  <span className="sm:hidden">👤</span>
+                </Button>
+              </Link>
               <Button 
                 variant="outline" 
                 size="sm"
