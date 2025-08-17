@@ -1,10 +1,22 @@
-import { MongoClient  ,ServerApiVersion} from 'mongodb';
+import { MongoClient, ServerApiVersion } from 'mongodb';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+// Check for MongoDB connection configuration
+let uri: string;
+
+// Check if using new credential-based configuration
+if (process.env.MONGODB_HOST && process.env.MONGODB_USERNAME && process.env.MONGODB_PASSWORD) {
+  // Build MongoDB URI with separate credentials
+  const username = encodeURIComponent(process.env.MONGODB_USERNAME);
+  const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+  const host = process.env.MONGODB_HOST;
+  
+  uri = `mongodb+srv://${username}:${password}@${host}/?retryWrites=true&w=majority&appName=Cluster0`;
+} else if (process.env.MONGODB_URI) {
+  // Fallback to legacy MONGODB_URI format
+  uri = process.env.MONGODB_URI;
+} else {
+  throw new Error('Invalid/Missing MongoDB configuration. Please set either MONGODB_HOST, MONGODB_USERNAME, MONGODB_PASSWORD or MONGODB_URI');
 }
-
-const uri = process.env.MONGODB_URI;
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
@@ -49,7 +61,8 @@ export default clientPromise;
 
 export async function getDatabase() {
   const client = await clientPromise;
-  return client.db('trustpilot');
+  const database = process.env.MONGODB_DATABASE || 'trustpilot';
+  return client.db(database);
 }
 
 export async function getFeedbacksCollection() {
