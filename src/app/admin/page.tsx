@@ -124,24 +124,33 @@ export default function AdminPage() {
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm sm:text-lg">A</span>
               </div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Admin Dashboard</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">Admin</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-slate-600 dark:text-slate-400 hidden sm:block">
-                Welcome, {user.name || user.email}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="text-slate-600 dark:text-slate-400 hidden md:block text-sm">
+                {user.name || user.email}
               </span>
               <Link href="/dashboard/feedback">
-                <Button variant="outline" size="sm">📊 Feedback</Button>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">📊 Feedback</span>
+                  <span className="sm:hidden">📊</span>
+                </Button>
               </Link>
-              <Button variant="outline" onClick={async () => {
-                await logout();
-                router.push('/login');
-              }}>
-                Logout
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-xs sm:text-sm"
+                onClick={async () => {
+                  await logout();
+                  router.push('/login');
+                }}
+              >
+                <span className="hidden sm:inline">Logout</span>
+                <span className="sm:hidden">🚪</span>
               </Button>
             </div>
           </div>
@@ -183,29 +192,31 @@ export default function AdminPage() {
             signupRequests.map((request) => (
               <Card key={request._id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{request.email}</CardTitle>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg break-all">{request.email}</CardTitle>
                       {request.name && (
-                        <CardDescription>{request.name}</CardDescription>
+                        <CardDescription className="text-sm">{request.name}</CardDescription>
                       )}
                     </div>
-                    {getStatusBadge(request.status)}
+                    <div className="flex-shrink-0">
+                      {getStatusBadge(request.status)}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1">
                       <span className="text-slate-600 dark:text-slate-400">Requested:</span>
-                      <span>{formatDate(request.createdAt)}</span>
+                      <span className="text-xs sm:text-sm">{formatDate(request.createdAt)}</span>
                     </div>
                     
                     {request.status === 'pending' && (
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button
                           size="sm"
                           onClick={() => handleAction(request._id, 'approve')}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                         >
                           ✅ Approve
                         </Button>
@@ -213,6 +224,7 @@ export default function AdminPage() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleAction(request._id, 'reject')}
+                          className="w-full sm:w-auto"
                         >
                           ❌ Reject
                         </Button>
@@ -221,15 +233,15 @@ export default function AdminPage() {
 
                     {(request.status === 'approved' || request.status === 'rejected') && (
                       <div className="pt-2">
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1">
                           <span className="text-slate-600 dark:text-slate-400">
                             {request.status === 'approved' ? 'Approved' : 'Rejected'} by:
                           </span>
-                          <span>{request.approvedBy}</span>
+                          <span className="text-xs sm:text-sm break-all">{request.approvedBy}</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1">
                           <span className="text-slate-600 dark:text-slate-400">Date:</span>
-                          <span>{request.approvedAt ? formatDate(request.approvedAt) : 'N/A'}</span>
+                          <span className="text-xs sm:text-sm">{request.approvedAt ? formatDate(request.approvedAt) : 'N/A'}</span>
                         </div>
                       </div>
                     )}

@@ -16,6 +16,14 @@ export interface Feedback {
   userAgent?: string;
 }
 
+export interface PaginatedFeedback {
+  feedback: Feedback[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 const FEEDBACK_FILE_PATH = path.join(process.cwd(), 'data', 'feedback.json');
 
 export class FeedbackService {
@@ -60,14 +68,32 @@ export class FeedbackService {
     } as Feedback;
   }
 
-  private static async getAllFeedbackMongoDB(): Promise<Feedback[]> {
+  private static async getAllFeedbackMongoDB(page: number = 1, pageSize: number = 10, type?: 'high-rating' | 'low-rating'): Promise<PaginatedFeedback> {
     const collection = await getFeedbacksCollection();
-    const feedback = await collection.find({}).sort({ timestamp: -1 }).toArray();
-    return feedback.map(doc => ({
-      ...doc,
-      _id: doc._id.toString(),
-      timestamp: new Date(doc.timestamp)
-    })) as Feedback[];
+    const filter = type ? { type } : {};
+    
+    const total = await collection.countDocuments(filter);
+    const totalPages = Math.ceil(total / pageSize);
+    const skip = (page - 1) * pageSize;
+    
+    const feedback = await collection
+      .find(filter)
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .toArray();
+    
+    return {
+      feedback: feedback.map(doc => ({
+        ...doc,
+        _id: doc._id.toString(),
+        timestamp: new Date(doc.timestamp)
+      })) as Feedback[],
+      total,
+      page,
+      pageSize,
+      totalPages
+    };
   }
 
   private static async getFeedbackByEmailMongoDB(email: string): Promise<Feedback[]> {
@@ -131,6 +157,18 @@ export class FeedbackService {
     } catch (error) {
       console.error('Invalid feedback ID format:', id);
       return false;
+    }
+  }
+
+  private static async deleteMultipleFeedbackMongoDB(ids: string[]): Promise<number> {
+    const collection = await getFeedbacksCollection();
+    try {
+      const objectIds = ids.map(id => new ObjectId(id));
+      const result = await collection.deleteMany({ _id: { $in: objectIds } });
+      return result.deletedCount;
+    } catch (error) {
+      console.error('Error deleting multiple feedback:', error);
+      return 0;
     }
   }
 
@@ -222,31 +260,65 @@ export class FeedbackService {
       const feedback: Feedback = {
         ...feedbackData,
         _id: randomUUID(),
-        timestamp: new Date(),
-      };
+      timestamp: new Date(),
+    };
 
-      const allFeedback = await this.readFeedbackFile();
-      allFeedback.push(feedback);
-      await this.writeFeedbackFile(allFeedback);
+    const allFeedback = await this.readFeedbackFile();
+    allFeedback.push(feedback);
+    await this.writeFeedbackFile(allFeedback);
 
-      return feedback;
+    return feedback;
     }
   }
 
-  static async getAllFeedback(): Promise<Feedback[]> {
+  static async getAllFeedback(page: number = 1, pageSize: number = 10, type?: 'high-rating' | 'low-rating'): Promise<PaginatedFeedback> {
     const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
     
     if (!useFileStorage && process.env.NODE_ENV === 'production') {
       try {
-        return await this.getAllFeedbackMongoDB();
+        return await this.getAllFeedbackMongoDB(page, pageSize, type);
       } catch (error) {
         console.error('MongoDB connection failed, falling back to file storage:', error instanceof Error ? error.message : String(error));
-        const feedback = await this.readFeedbackFile();
-        return feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        // Fallback to file storage with pagination
+        let feedback = await this.readFeedbackFile();
+        if (type) {
+          feedback = feedback.filter(f => f.type === type);
+        }
+        feedback = feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        
+        const total = feedback.length;
+        const totalPages = Math.ceil(total / pageSize);
+        const skip = (page - 1) * pageSize;
+        const paginatedFeedback = feedback.slice(skip, skip + pageSize);
+        
+        return {
+          feedback: paginatedFeedback,
+          total,
+          page,
+          pageSize,
+          totalPages
+        };
       }
     } else {
-      const feedback = await this.readFeedbackFile();
-      return feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      // File storage with pagination
+      let feedback = await this.readFeedbackFile();
+      if (type) {
+        feedback = feedback.filter(f => f.type === type);
+      }
+      feedback = feedback.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      const total = feedback.length;
+      const totalPages = Math.ceil(total / pageSize);
+      const skip = (page - 1) * pageSize;
+      const paginatedFeedback = feedback.slice(skip, skip + pageSize);
+      
+      return {
+        feedback: paginatedFeedback,
+        total,
+        page,
+        pageSize,
+        totalPages
+      };
     }
   }
 
@@ -254,74 +326,93 @@ export class FeedbackService {
     if (process.env.NODE_ENV === 'production') {
       return this.getFeedbackByEmailMongoDB(email);
     } else {
-      const feedback = await this.readFeedbackFile();
-      return feedback
-        .filter(f => f.email === email)
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const feedback = await this.readFeedbackFile();
+    return feedback
+      .filter(f => f.email === email)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
   }
 
-  static async getFeedbackByType(type: 'high-rating' | 'low-rating'): Promise<Feedback[]> {
-    if (process.env.NODE_ENV === 'production') {
-      return this.getFeedbackByTypeMongoDB(type);
-    } else {
-      const feedback = await this.readFeedbackFile();
-      return feedback
-        .filter(f => f.type === type)
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }
+  static async getFeedbackByType(type: 'high-rating' | 'low-rating', page: number = 1, pageSize: number = 10): Promise<PaginatedFeedback> {
+    return this.getAllFeedback(page, pageSize, type);
   }
 
   static async getFeedbackStats() {
     if (process.env.NODE_ENV === 'production') {
       return this.getFeedbackStatsMongoDB();
     } else {
-      const feedback = await this.readFeedbackFile();
+    const feedback = await this.readFeedbackFile();
+    
+    const stats = feedback.reduce((acc, item) => {
+      if (!acc.byType[item.type]) {
+        acc.byType[item.type] = {
+          count: 0,
+          ratings: [],
+          totalRating: 0
+        };
+      }
       
-      const stats = feedback.reduce((acc, item) => {
-        if (!acc.byType[item.type]) {
-          acc.byType[item.type] = {
-            count: 0,
-            ratings: [],
-            totalRating: 0
-          };
-        }
-        
-        acc.byType[item.type].count++;
-        acc.byType[item.type].ratings.push(item.rating);
-        acc.byType[item.type].totalRating += item.rating;
-        
-        return acc;
-      }, {
-        total: feedback.length,
-        byType: {} as Record<string, { count: number; ratings: number[]; totalRating: number; avgRating?: number }>
-      });
+      acc.byType[item.type].count++;
+      acc.byType[item.type].ratings.push(item.rating);
+      acc.byType[item.type].totalRating += item.rating;
+      
+      return acc;
+    }, {
+      total: feedback.length,
+      byType: {} as Record<string, { count: number; ratings: number[]; totalRating: number; avgRating?: number }>
+    });
 
-      // Calculate averages
-      Object.keys(stats.byType).forEach(type => {
-        const typeStats = stats.byType[type];
-        typeStats.avgRating = Math.round((typeStats.totalRating / typeStats.count) * 10) / 10;
-        delete (typeStats as any).totalRating; // Remove this from final output
-      });
+    // Calculate averages
+    Object.keys(stats.byType).forEach(type => {
+      const typeStats = stats.byType[type];
+      typeStats.avgRating = Math.round((typeStats.totalRating / typeStats.count) * 10) / 10;
+      delete (typeStats as any).totalRating; // Remove this from final output
+    });
 
-      return stats;
+    return stats;
     }
   }
 
   static async deleteFeedback(id: string): Promise<boolean> {
-    if (process.env.NODE_ENV === 'production') {
-      return this.deleteFeedbackMongoDB(id);
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.deleteFeedbackMongoDB(id);
+      } catch (error) {
+        console.error('MongoDB deletion failed:', error);
+        return false;
+      }
+    } else {
+    const feedback = await this.readFeedbackFile();
+    const initialLength = feedback.length;
+    const filteredFeedback = feedback.filter(f => f._id !== id);
+    
+    if (filteredFeedback.length < initialLength) {
+      await this.writeFeedbackFile(filteredFeedback);
+      return true;
+    }
+    
+    return false;
+    }
+  }
+
+  static async deleteMultipleFeedback(ids: string[]): Promise<number> {
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.deleteMultipleFeedbackMongoDB(ids);
+      } catch (error) {
+        console.error('MongoDB bulk deletion failed:', error);
+        return 0;
+      }
     } else {
       const feedback = await this.readFeedbackFile();
       const initialLength = feedback.length;
-      const filteredFeedback = feedback.filter(f => f._id !== id);
-      
-      if (filteredFeedback.length < initialLength) {
-        await this.writeFeedbackFile(filteredFeedback);
-        return true;
-      }
-      
-      return false;
+      const filtered = feedback.filter(f => !ids.includes(f._id || ''));
+      await this.writeFeedbackFile(filtered);
+      return initialLength - filtered.length;
     }
   }
 
@@ -329,7 +420,7 @@ export class FeedbackService {
     if (process.env.NODE_ENV === 'production') {
       return this.clearAllFeedbackMongoDB();
     } else {
-      await this.writeFeedbackFile([]);
+    await this.writeFeedbackFile([]);
     }
   }
 
@@ -338,56 +429,56 @@ export class FeedbackService {
     if (process.env.NODE_ENV === 'production') {
       return this.addSampleDataMongoDB();
     } else {
-      const sampleFeedback: Omit<Feedback, '_id' | 'timestamp'>[] = [
-        {
-          email: 'john@example.com',
-          rating: 5,
-          feedback: 'Amazing service! The team was very responsive and helpful.',
-          name: 'John Smith',
-          type: 'high-rating',
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          email: 'sarah@example.com',
-          rating: 4,
-          feedback: 'Great experience overall. Would recommend to others.',
-          name: 'Sarah Johnson',
-          type: 'high-rating',
-          ipAddress: '192.168.1.2',
-          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-        },
-        {
-          email: 'mike@example.com',
-          rating: 2,
-          feedback: 'The service was slow and the interface was confusing.',
-          name: 'Mike Wilson',
-          type: 'low-rating',
-          ipAddress: '192.168.1.3',
-          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15'
-        },
-        {
-          email: 'lisa@example.com',
-          rating: 1,
-          feedback: 'Terrible experience. Nothing worked as expected.',
-          name: 'Lisa Brown',
-          type: 'low-rating',
-          ipAddress: '192.168.1.4',
-          userAgent: 'Mozilla/5.0 (Android 11; Mobile; rv:68.0) Gecko/68.0 Firefox/88.0'
-        },
-        {
-          email: 'david@example.com',
-          rating: 5,
-          feedback: 'Excellent! Fast, reliable, and user-friendly.',
-          name: 'David Lee',
-          type: 'high-rating',
-          ipAddress: '192.168.1.5',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      ];
+    const sampleFeedback: Omit<Feedback, '_id' | 'timestamp'>[] = [
+      {
+        email: 'john@example.com',
+        rating: 5,
+        feedback: 'Amazing service! The team was very responsive and helpful.',
+        name: 'John Smith',
+        type: 'high-rating',
+        ipAddress: '192.168.1.1',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      {
+        email: 'sarah@example.com',
+        rating: 4,
+        feedback: 'Great experience overall. Would recommend to others.',
+        name: 'Sarah Johnson',
+        type: 'high-rating',
+        ipAddress: '192.168.1.2',
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      },
+      {
+        email: 'mike@example.com',
+        rating: 2,
+        feedback: 'The service was slow and the interface was confusing.',
+        name: 'Mike Wilson',
+        type: 'low-rating',
+        ipAddress: '192.168.1.3',
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15'
+      },
+      {
+        email: 'lisa@example.com',
+        rating: 1,
+        feedback: 'Terrible experience. Nothing worked as expected.',
+        name: 'Lisa Brown',
+        type: 'low-rating',
+        ipAddress: '192.168.1.4',
+        userAgent: 'Mozilla/5.0 (Android 11; Mobile; rv:68.0) Gecko/68.0 Firefox/88.0'
+      },
+      {
+        email: 'david@example.com',
+        rating: 5,
+        feedback: 'Excellent! Fast, reliable, and user-friendly.',
+        name: 'David Lee',
+        type: 'high-rating',
+        ipAddress: '192.168.1.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    ];
 
-      for (const feedback of sampleFeedback) {
-        await this.createFeedback(feedback);
+    for (const feedback of sampleFeedback) {
+      await this.createFeedback(feedback);
       }
     }
   }

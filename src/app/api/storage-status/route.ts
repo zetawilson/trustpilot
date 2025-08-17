@@ -27,8 +27,8 @@ export async function GET() {
     let storageTest = 'unknown';
     
     try {
-      const allFeedback = await FeedbackService.getAllFeedback();
-      feedbackCount = allFeedback.length;
+      const result = await FeedbackService.getAllFeedback(1, 1); // Get just 1 item to test storage
+      feedbackCount = result.total; // Use the total count from pagination
       storageTest = 'success';
     } catch (error) {
       storageTest = 'failed';

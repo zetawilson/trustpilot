@@ -6,39 +6,70 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'high-rating' | 'low-rating' | null;
     const email = searchParams.get('email');
-    const limit = parseInt(searchParams.get('limit') || '50');
     const page = parseInt(searchParams.get('page') || '1');
-
-    let feedback;
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
 
     if (email) {
-      feedback = await FeedbackService.getFeedbackByEmail(email);
-    } else if (type) {
-      feedback = await FeedbackService.getFeedbackByType(type);
+      // Email-based search doesn't have pagination yet, return all
+      const feedback = await FeedbackService.getFeedbackByEmail(email);
+      return NextResponse.json({
+        success: true,
+        data: {
+          feedback,
+          total: feedback.length,
+          page: 1,
+          pageSize: feedback.length,
+          totalPages: 1
+        }
+      });
     } else {
-      feedback = await FeedbackService.getAllFeedback();
+      // Use paginated method
+      const result = await FeedbackService.getAllFeedback(page, pageSize, type || undefined);
+      return NextResponse.json({
+        success: true,
+        data: result
+      });
     }
 
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedFeedback = feedback.slice(startIndex, endIndex);
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { ids } = body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid request: ids array required' },
+        { status: 400 }
+      );
+    }
+
+    let deletedCount;
+    if (ids.length === 1) {
+      const success = await FeedbackService.deleteFeedback(ids[0]);
+      deletedCount = success ? 1 : 0;
+    } else {
+      deletedCount = await FeedbackService.deleteMultipleFeedback(ids);
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        feedback: paginatedFeedback,
-        pagination: {
-          page,
-          limit,
-          total: feedback.length,
-          totalPages: Math.ceil(feedback.length / limit)
-        }
+        deletedCount,
+        message: `Successfully deleted ${deletedCount} feedback item(s)`
       }
     });
 
   } catch (error) {
-    console.error('Error fetching feedback:', error);
+    console.error('Error deleting feedback:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

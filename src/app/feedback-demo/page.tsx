@@ -40,11 +40,11 @@ export default function FeedbackDemoPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Demo Email: <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{demoEmail}</code>
+                  Demo Email: <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs sm:text-sm break-all">{demoEmail}</code>
                 </p>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   onClick={() => handleHighRatingClick(4)}
                   className="bg-green-600 hover:bg-green-700"
@@ -61,8 +61,8 @@ export default function FeedbackDemoPage() {
 
               <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
                 <p><strong>Example URLs:</strong></p>
-                <p><code>/high-rating?email=user@example.com&rate=4</code></p>
-                <p><code>/high-rating?email=user@example.com&rate=5</code></p>
+                <p className="break-all"><code className="text-xs">/high-rating?email=user@example.com&rate=4</code></p>
+                <p className="break-all"><code className="text-xs">/high-rating?email=user@example.com&rate=5</code></p>
               </div>
             </CardContent>
           </Card>
@@ -78,11 +78,11 @@ export default function FeedbackDemoPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Demo Email: <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{demoEmail}</code>
+                  Demo Email: <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs sm:text-sm break-all">{demoEmail}</code>
                 </p>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   onClick={() => handleLowRatingClick(1)}
                   className="bg-orange-600 hover:bg-orange-700"
@@ -105,9 +105,9 @@ export default function FeedbackDemoPage() {
 
               <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
                 <p><strong>Example URLs:</strong></p>
-                <p><code>/low-rating?email=user@example.com&rate=1</code></p>
-                <p><code>/low-rating?email=user@example.com&rate=2</code></p>
-                <p><code>/low-rating?email=user@example.com&rate=3</code></p>
+                <p className="break-all"><code className="text-xs">/low-rating?email=user@example.com&rate=1</code></p>
+                <p className="break-all"><code className="text-xs">/low-rating?email=user@example.com&rate=2</code></p>
+                <p className="break-all"><code className="text-xs">/low-rating?email=user@example.com&rate=3</code></p>
               </div>
             </CardContent>
           </Card>
@@ -124,8 +124,8 @@ export default function FeedbackDemoPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <h4 className="font-semibold">Email Template Integration:</h4>
-              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
-                <pre className="text-sm overflow-x-auto">
+              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg overflow-x-auto">
+                <pre className="text-xs sm:text-sm">
 {`<!-- Star Rating Links in Email -->
 <div class="rating-stars">
   <a href="https://yoursite.com/high-rating?email={{user_email}}&rate=5">⭐</a>

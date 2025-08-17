@@ -36,9 +36,9 @@ export default function NotFound() {
                 </Button>
               </Link>
               
-              <Link href="/dashboard" className="block">
+              <Link href="/dashboard/feedback" className="block">
                 <Button className="w-full" variant="outline">
-                  📊 Go to Dashboard
+                  📊 Go to Feedback Dashboard
                 </Button>
               </Link>
               
