@@ -17,6 +17,7 @@ interface Feedback {
   type: 'high-rating' | 'low-rating';
   timestamp: string;
   ipAddress?: string;
+  invitedBy?: string[];
 }
 
 interface FeedbackStats {
@@ -32,6 +33,12 @@ interface FeedbackStats {
       avgRating: number;
       ratings: number[];
     };
+  };
+  invitationStats?: {
+    invited: number;
+    notInvited: number;
+    total: number;
+    ratio: number;
   };
 }
 
@@ -49,6 +56,7 @@ export default function FeedbackDashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [invitingFeedback, setInvitingFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -185,6 +193,75 @@ export default function FeedbackDashboardPage() {
     setPageSize(size);
     setCurrentPage(1);
     setSelectedIds(new Set());
+  };
+
+  const handleToggleInvitation = async (feedbackId: string) => {
+    console.log('=== Toggle Invitation Start ===');
+    console.log('Toggling invitation for feedback:', feedbackId);
+    console.log('Current user ID:', user?._id);
+    console.log('Current feedback state:', feedback.find(f => f._id === feedbackId));
+    console.log('Current invitingFeedback state:', invitingFeedback);
+    
+    setInvitingFeedback(feedbackId);
+    try {
+      const response = await fetch('/api/feedback/toggle-invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ feedbackId }),
+      });
+
+      const data = await response.json();
+      console.log('Toggle response:', data);
+
+      if (response.ok) {
+        // Update the local state immediately for better UX
+        setFeedback(prevFeedback => 
+          prevFeedback.map(item => {
+            if (item._id === feedbackId) {
+              const currentInvitedBy = item.invitedBy || [];
+              const isCurrentlyInvited = currentInvitedBy.includes(user?._id || '');
+              
+              if (isCurrentlyInvited) {
+                // Remove invitation
+                return {
+                  ...item,
+                  invitedBy: currentInvitedBy.filter(id => id !== user?._id)
+                };
+              } else {
+                // Add invitation
+                return {
+                  ...item,
+                  invitedBy: [...currentInvitedBy, user?._id || '']
+                };
+              }
+            }
+            return item;
+          })
+        );
+        
+        // Also refresh stats
+        fetchStats();
+      } else {
+        alert(data.error || 'Failed to toggle invitation');
+      }
+    } catch (error) {
+      console.error('Error toggling invitation:', error);
+      alert('Failed to toggle invitation');
+    } finally {
+      console.log('=== Toggle Invitation End ===');
+      console.log('Resetting invitingFeedback to null');
+      setInvitingFeedback(null);
+      
+      // Safety timeout to ensure state is reset
+      setTimeout(() => {
+        if (invitingFeedback === feedbackId) {
+          console.log('Safety timeout: Forcing reset of invitingFeedback');
+          setInvitingFeedback(null);
+        }
+      }, 2000);
+    }
   };
 
   if (loading) {
@@ -379,21 +456,39 @@ export default function FeedbackDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Response Rate
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {stats.total > 0 ? Math.round((stats.total / (stats.total + 10)) * 100) : 0}%
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  Based on total feedback
-                </p>
-              </CardContent>
-            </Card>
+                         <Card className="hover:shadow-lg transition-shadow">
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                   Response Rate
+                 </CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                   {stats.total > 0 ? Math.round((stats.total / (stats.total + 10)) * 100) : 0}%
+                 </div>
+                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                   Based on total feedback
+                 </p>
+               </CardContent>
+             </Card>
+
+             {stats.invitationStats && (
+               <Card className="hover:shadow-lg transition-shadow">
+                 <CardHeader className="pb-2">
+                   <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                     Invitation Status
+                   </CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                     {stats.invitationStats.ratio}%
+                   </div>
+                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                     {stats.invitationStats.invited} invited / {stats.invitationStats.total} total
+                   </p>
+                 </CardContent>
+               </Card>
+             )}
           </div>
         )}
 
@@ -551,36 +646,102 @@ export default function FeedbackDashboardPage() {
           ) : (
             feedback.map((item) => (
               <Card key={item._id} className={`hover:shadow-lg transition-shadow ${user?.isSuperUser && selectedIds.has(item._id) ? 'ring-2 ring-blue-500' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-start gap-3">
-                    {user?.isSuperUser && (
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(item._id)}
-                        onChange={() => handleSelectItem(item._id)}
-                        className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                          <div className="flex items-center gap-1">
-                            {renderStars(item.rating)}
-                          </div>
-                          <Badge 
-                            variant={item.type === 'high-rating' ? 'default' : 'secondary'}
-                            className={item.type === 'high-rating' ? 'bg-green-600' : 'bg-orange-600'}
+                                 <CardHeader>
+                   <div className="flex items-start justify-between gap-3">
+                     <div className="flex items-start gap-3 flex-1">
+                       {user?.isSuperUser && (
+                         <input
+                           type="checkbox"
+                           checked={selectedIds.has(item._id)}
+                           onChange={() => handleSelectItem(item._id)}
+                           className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                         />
+                       )}
+                       <div className="flex-1">
+                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                             <div className="flex items-center gap-1">
+                               {renderStars(item.rating)}
+                             </div>
+                             <Badge 
+                               variant={item.type === 'high-rating' ? 'default' : 'secondary'}
+                               className={item.type === 'high-rating' ? 'bg-green-600' : 'bg-orange-600'}
+                             >
+                               {item.type === 'high-rating' ? 'High Rating' : 'Low Rating'}
+                             </Badge>
+                             {item.invitedBy && item.invitedBy.length > 0 && (
+                               <Badge variant="default" className="bg-purple-600">
+                                 Invited
+                               </Badge>
+                             )}
+                           </div>
+                           <span className="text-sm text-slate-500 dark:text-slate-400">
+                             {formatDate(item.timestamp)}
+                           </span>
+                         </div>
+                       </div>
+                     </div>
+                     
+                                           {/* Awesome Invitation Toggle */}
+                      <div className="flex flex-col items-center gap-2">
+                                                <div className="relative">
+                          {/* Ripple effect - behind the button */}
+                          <div className={`absolute inset-0 rounded-full transition-all duration-300 pointer-events-none ${
+                            item.invitedBy?.includes(user?._id || '') || false
+                              ? 'bg-purple-400 opacity-20 animate-ping'
+                              : 'hidden'
+                          }`}></div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              console.log('Button clicked for feedback:', item._id);
+                              console.log('Current invitingFeedback state:', invitingFeedback);
+                              handleToggleInvitation(item._id);
+                            }}
+                            disabled={invitingFeedback === item._id}
+                            className={`relative z-10 inline-flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+                              invitingFeedback === item._id 
+                                ? 'cursor-not-allowed opacity-50' 
+                                : 'cursor-pointer'
+                            } ${
+                              (item.invitedBy?.includes(user?._id || '') || false)
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40'
+                                : 'bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 hover:from-slate-300 hover:to-slate-400 dark:hover:from-slate-600 dark:hover:to-slate-500 hover:shadow-md'
+                            } ${invitingFeedback === item._id ? 'animate-pulse' : ''}`}
                           >
-                            {item.type === 'high-rating' ? 'High Rating' : 'Low Rating'}
-                          </Badge>
+                            {invitingFeedback === item._id ? (
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <svg
+                                className={`w-5 h-5 transition-all duration-300 ${
+                                  item.invitedBy?.includes(user?._id || '') || false
+                                    ? 'text-white transform rotate-12'
+                                    : 'text-slate-500 dark:text-slate-400'
+                                }`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
+                          </button>
                         </div>
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                          {formatDate(item.timestamp)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
+                       
+                       <span className={`text-xs font-medium transition-all duration-300 ${
+                         item.invitedBy?.includes(user?._id || '') || false
+                           ? 'text-purple-600 dark:text-purple-400'
+                           : 'text-slate-500 dark:text-slate-400'
+                       }`}>
+                         {invitingFeedback === item._id ? 'Updating...' : 'Invite'}
+                       </span>
+                     </div>
+                   </div>
+                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>

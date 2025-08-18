@@ -14,6 +14,7 @@ export interface Feedback {
   timestamp: Date;
   ipAddress?: string;
   userAgent?: string;
+  invitedBy?: string[]; // Array of user IDs who have invited this feedback
 }
 
 export interface PaginatedFeedback {
@@ -481,5 +482,110 @@ export class FeedbackService {
       await this.createFeedback(feedback);
       }
     }
+  }
+
+  // Invitation methods
+  static async toggleInvitation(feedbackId: string, userId: string): Promise<boolean> {
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.toggleInvitationMongoDB(feedbackId, userId);
+      } catch (error) {
+        console.error('MongoDB invitation toggle failed:', error);
+        return false;
+      }
+    } else {
+      return await this.toggleInvitationFile(feedbackId, userId);
+    }
+  }
+
+  private static async toggleInvitationMongoDB(feedbackId: string, userId: string): Promise<boolean> {
+    const collection = await getFeedbacksCollection();
+    
+    try {
+      const feedback = await collection.findOne({ _id: new ObjectId(feedbackId) });
+      if (!feedback) return false;
+
+      const invitedBy = feedback.invitedBy || [];
+      const isInvited = invitedBy.includes(userId);
+      
+      let newInvitedBy: string[];
+      if (isInvited) {
+        // Remove invitation
+        newInvitedBy = invitedBy.filter((id: string) => id !== userId);
+      } else {
+        // Add invitation
+        newInvitedBy = [...invitedBy, userId];
+      }
+
+      const result = await collection.updateOne(
+        { _id: new ObjectId(feedbackId) },
+        { $set: { invitedBy: newInvitedBy } }
+      );
+
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error toggling invitation in MongoDB:', error);
+      return false;
+    }
+  }
+
+  private static async toggleInvitationFile(feedbackId: string, userId: string): Promise<boolean> {
+    const feedback = await this.readFeedbackFile();
+    const feedbackIndex = feedback.findIndex(f => f._id === feedbackId);
+    
+    if (feedbackIndex === -1) return false;
+
+    const invitedBy = feedback[feedbackIndex].invitedBy || [];
+    const isInvited = invitedBy.includes(userId);
+    
+    if (isInvited) {
+      // Remove invitation
+      feedback[feedbackIndex].invitedBy = invitedBy.filter((id: string) => id !== userId);
+    } else {
+      // Add invitation
+      feedback[feedbackIndex].invitedBy = [...invitedBy, userId];
+    }
+
+    await this.writeFeedbackFile(feedback);
+    return true;
+  }
+
+  // Get invitation statistics
+  static async getInvitationStats(): Promise<{ invited: number; notInvited: number; total: number; ratio: number }> {
+    const useFileStorage = process.env.NODE_ENV === 'development' || process.env.FORCE_FILE_STORAGE === 'true';
+    
+    if (!useFileStorage && process.env.NODE_ENV === 'production') {
+      try {
+        return await this.getInvitationStatsMongoDB();
+      } catch (error) {
+        console.error('MongoDB invitation stats failed:', error);
+        return { invited: 0, notInvited: 0, total: 0, ratio: 0 };
+      }
+    } else {
+      return await this.getInvitationStatsFile();
+    }
+  }
+
+  private static async getInvitationStatsMongoDB(): Promise<{ invited: number; notInvited: number; total: number; ratio: number }> {
+    const collection = await getFeedbacksCollection();
+    
+    const total = await collection.countDocuments({});
+    const invited = await collection.countDocuments({ invitedBy: { $exists: true, $ne: [] } });
+    const notInvited = total - invited;
+    const ratio = total > 0 ? Math.round((invited / total) * 100) : 0;
+
+    return { invited, notInvited, total, ratio };
+  }
+
+  private static async getInvitationStatsFile(): Promise<{ invited: number; notInvited: number; total: number; ratio: number }> {
+    const feedback = await this.readFeedbackFile();
+    const total = feedback.length;
+    const invited = feedback.filter(f => f.invitedBy && f.invitedBy.length > 0).length;
+    const notInvited = total - invited;
+    const ratio = total > 0 ? Math.round((invited / total) * 100) : 0;
+
+    return { invited, notInvited, total, ratio };
   }
 }

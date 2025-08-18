@@ -3,11 +3,17 @@ import { FeedbackService } from '@/lib/feedbackService';
 
 export async function GET(request: NextRequest) {
   try {
-    const stats = await FeedbackService.getFeedbackStats();
+    const [feedbackStats, invitationStats] = await Promise.all([
+      FeedbackService.getFeedbackStats(),
+      FeedbackService.getInvitationStats()
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: stats
+      data: {
+        ...feedbackStats,
+        invitationStats
+      }
     });
 
   } catch (error) {

@@ -22,6 +22,7 @@ export function middleware(request: NextRequest) {
     '/api/feedback/high-rating',
     '/api/feedback/low-rating',
     '/api/feedback',
+    '/api/feedback/toggle-invitation',
   ];
 
   // Admin routes that require super user privileges
