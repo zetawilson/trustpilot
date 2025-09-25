@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackService } from '@/lib/feedbackService';
+import { KlaviyoService } from '@/lib/klaviyoService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,6 +47,24 @@ export async function POST(request: NextRequest) {
       type: 'low-rating',
       timestamp: savedFeedback.timestamp
     });
+
+    // Send event to Klaviyo
+    const klaviyoResult = await KlaviyoService.sendFeedbackEventPost({
+      email,
+      name,
+      rating,
+      feedback,
+      feedbackType: 'low-rating',
+      timestamp: savedFeedback.timestamp.toISOString(),
+      ipAddress
+    });
+
+    if (klaviyoResult.success) {
+      console.log('Klaviyo event sent successfully for low-rating feedback');
+    } else {
+      console.warn('Failed to send Klaviyo event:', klaviyoResult.error);
+      // Note: We don't fail the request if Klaviyo fails, as the feedback is already saved
+    }
 
     return NextResponse.json({
       success: true,
